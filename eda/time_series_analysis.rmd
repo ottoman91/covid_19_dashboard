@@ -81,6 +81,10 @@ covid_confirmed %>%
   ggplot(aes(date, confirmed_cases)) +
   geom_line() +
   transition_reveal(date) +
+  scale_x_date(
+    date_labels = "%d %b %Y",
+    date_breaks = "1 week"
+  ) +
   labs(
     title = "Trajectory of Confirmed COVID-19 Cases in China",
     x = "Date",
@@ -106,6 +110,10 @@ covid_deaths %>%
   ggplot(aes(date, confirmed_deaths)) +
   geom_line() +
   transition_reveal(date) +
+  scale_x_date(
+    date_labels = "%d %b %Y",
+    date_breaks = "1 week"
+  ) +
   labs(
     title = "Trajectory of Confirmed COVID-19 Deaths in China",
     x = "Date",
@@ -130,6 +138,10 @@ covid_recovered %>%
   ggplot(aes(date, confirmed_recovered)) +
   geom_line() +
   transition_reveal(date) +
+  scale_x_date(
+    date_labels = "%d %b %Y",
+    date_breaks = "1 week"
+  ) +
   labs(
     title = "Trajectory of Confirmed COVID-19 Recoveries in China",
     x = "Date",
