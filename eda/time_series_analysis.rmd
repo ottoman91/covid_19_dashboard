@@ -90,6 +90,51 @@ covid_confirmed %>%
 
 ```
 
+## Time series analysis on COVID Deaths cases over time in China
 
+```{r}
+covid_deaths %>% 
+  pivot_longer(
+    cols = -c(province_state, country_region, lat, long),
+    names_to = "date",
+    values_to = "confirmed_deaths"
+  ) %>% 
+  group_by(country_region, date) %>% 
+  summarise(confirmed_deaths = sum(confirmed_deaths)) %>% 
+  mutate(date = mdy(date)) %>% 
+  filter(country_region == "China") %>% 
+  ggplot(aes(date, confirmed_deaths)) +
+  geom_line() +
+  transition_reveal(date) +
+  labs(
+    title = "Trajectory of Confirmed COVID-19 Deaths in China",
+    x = "Date",
+    y = "Number of Deaths",
+    caption = "Source: Johns Hopkins University"
+  )
+```
 
+## Time series analysis on COVID Recoveries over time in China
+
+```{r}
+covid_recovered %>% 
+  pivot_longer(
+    cols = -c(province_state, country_region, lat, long),
+    names_to = "date",
+    values_to = "confirmed_recovered"
+  ) %>% 
+  group_by(country_region, date) %>% 
+  summarise(confirmed_recovered = sum(confirmed_recovered)) %>% 
+  mutate(date = mdy(date)) %>% 
+  filter(country_region == "China") %>% 
+  ggplot(aes(date, confirmed_recovered)) +
+  geom_line() +
+  transition_reveal(date) +
+  labs(
+    title = "Trajectory of Confirmed COVID-19 Recoveries in China",
+    x = "Date",
+    y = "Number of Rexoveries",
+    caption = "Source: Johns Hopkins University"
+  )
+```
 

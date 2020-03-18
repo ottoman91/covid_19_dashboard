@@ -3,10 +3,12 @@ Time Series Analysis of Case Load, Recovery and Mortality Rates
 Usman Khaliq
 2020-03-18
 
-  - [Time series analysis on Confirmed COVID cases over
-    time](#time-series-analysis-on-confirmed-covid-cases-over-time)
-      - [Subsection](#subsection)
-  - [Section 2](#section-2)
+  - [Time series analysis on Confirmed COVID cases over time in
+    China](#time-series-analysis-on-confirmed-covid-cases-over-time-in-china)
+  - [Time series analysis on COVID Deaths cases over time in
+    China](#time-series-analysis-on-covid-deaths-cases-over-time-in-china)
+  - [Time series analysis on COVID Recoveries over time in
+    China](#time-series-analysis-on-covid-recoveries-over-time-in-china)
 
 ``` r
 # Libraries
@@ -25,7 +27,7 @@ covid_recovered_data <- here::here("data/covid_recovered.rds")
 # Code
 ```
 
-## Time series analysis on Confirmed COVID cases over time
+## Time series analysis on Confirmed COVID cases over time in China
 
 First, lets read all the data into Rds objects
 
@@ -89,29 +91,54 @@ covid_confirmed %>%
 
 ![](time_series_analysis_files/figure-gfm/unnamed-chunk-3-1.gif)<!-- -->
 
+## Time series analysis on COVID Deaths cases over time in China
+
 ``` r
-# covid_confirmed %>% 
-#   pivot_longer(
-#     cols = -c(province_state, country_region, lat, long),
-#     names_to = "date",
-#     values_to = "confirmed_cases"
-#   ) %>% 
-#   group_by(country_region, date) %>% 
-#   summarise(confirmed_cases = sum(confirmed_cases)) %>% 
-#   mutate(date = mdy(date)) %>% 
-#   ggplot(
-#     aes(
-#       date,
-#       confirmed_cases,
-#       size = confirmed_cases,
-#       color = country_region
-#     )
-#   ) +
-#   geom_point() +
-#   scale_color_viridis_d() +
-#   transition_reveal(date)  
+covid_deaths %>% 
+  pivot_longer(
+    cols = -c(province_state, country_region, lat, long),
+    names_to = "date",
+    values_to = "confirmed_deaths"
+  ) %>% 
+  group_by(country_region, date) %>% 
+  summarise(confirmed_deaths = sum(confirmed_deaths)) %>% 
+  mutate(date = mdy(date)) %>% 
+  filter(country_region == "China") %>% 
+  ggplot(aes(date, confirmed_deaths)) +
+  geom_line() +
+  transition_reveal(date) +
+  labs(
+    title = "Trajectory of Confirmed COVID-19 Deaths in China",
+    x = "Date",
+    y = "Number of Deaths",
+    caption = "Source: Johns Hopkins University"
+  )
 ```
 
-### Subsection
+![](time_series_analysis_files/figure-gfm/unnamed-chunk-4-1.gif)<!-- -->
 
-## Section 2
+## Time series analysis on COVID Recoveries over time in China
+
+``` r
+covid_recovered %>% 
+  pivot_longer(
+    cols = -c(province_state, country_region, lat, long),
+    names_to = "date",
+    values_to = "confirmed_recovered"
+  ) %>% 
+  group_by(country_region, date) %>% 
+  summarise(confirmed_recovered = sum(confirmed_recovered)) %>% 
+  mutate(date = mdy(date)) %>% 
+  filter(country_region == "China") %>% 
+  ggplot(aes(date, confirmed_recovered)) +
+  geom_line() +
+  transition_reveal(date) +
+  labs(
+    title = "Trajectory of Confirmed COVID-19 Recoveries in China",
+    x = "Date",
+    y = "Number of Rexoveries",
+    caption = "Source: Johns Hopkins University"
+  )
+```
+
+![](time_series_analysis_files/figure-gfm/unnamed-chunk-5-1.gif)<!-- -->
