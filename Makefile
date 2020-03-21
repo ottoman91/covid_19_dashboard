@@ -1,8 +1,8 @@
 # Search path
-VPATH =
+VPATH = data data-raw eda reports scripts
 
 # Processed data files
-DATA =
+DATA = covid_confirmed.rds covid_deaths.rds covid_recovered.rds
 
 # EDA studies
 EDA =

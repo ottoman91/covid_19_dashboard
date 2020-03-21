@@ -1,0 +1,314 @@
+---
+title: "COVID-19 Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: scroll
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard) 
+library(tidyverse) 
+library(lubridate)
+library(leaflet)
+
+#Paths for the raw data files
+covid_confirmed_data <- "covid_confirmed.rds"
+covid_deaths_data <- "covid_deaths.rds"
+covid_recovered_data <- "covid_recovered.rds" 
+
+#Read the data into RDS files 
+covid_confirmed <-
+  covid_confirmed_data %>% 
+  read_rds() %>% 
+  rename(
+    province_state = `Province/State`,
+    country_region = `Country/Region`,
+    lat = Lat,
+    long = Long
+  )
+
+covid_deaths <-
+  covid_deaths_data %>% 
+  read_rds() %>% 
+  rename(
+    province_state = `Province/State`,
+    country_region = `Country/Region`,
+    lat = Lat,
+    long = Long
+  )
+
+covid_recovered <-
+  covid_recovered_data %>% 
+  read_rds() %>% 
+  rename(
+    province_state = `Province/State`,
+    country_region = `Country/Region`,
+    lat = Lat,
+    long = Long
+  ) 
+
+
+#Summarize the confirmed, recovered and death cases by country and dates 
+
+covid_confirmed_summarised <-
+  covid_confirmed %>% 
+  pivot_longer(
+    cols = -c(province_state, country_region, lat, long),
+    names_to = "date",
+    values_to = "confirmed_cases"
+  ) %>% 
+  group_by(country_region, date) %>% 
+  summarise(confirmed_cases = sum(confirmed_cases)) %>% 
+  mutate(date = mdy(date)) 
+
+covid_death_summarised <-
+  covid_deaths %>% 
+  pivot_longer(
+    cols = -c(province_state, country_region, lat, long),
+    names_to = "date",
+    values_to = "confirmed_deaths"
+  ) %>% 
+  group_by(country_region, date) %>% 
+  summarise(confirmed_deaths = sum(confirmed_deaths)) %>% 
+  mutate(date = mdy(date))
+
+covid_recovered_summarised <-
+  covid_recovered %>% 
+  pivot_longer(
+    cols = -c(province_state, country_region, lat, long),
+    names_to = "date",
+    values_to = "confirmed_recovered"
+  ) %>% 
+  group_by(country_region, date) %>% 
+  summarise(confirmed_recovered = sum(confirmed_recovered)) %>% 
+  mutate(date = mdy(date)) 
+
+covid_confirmed_leaflet <-
+  covid_confirmed %>% 
+  pivot_longer(
+    cols = -c(province_state, country_region, lat, long),
+    names_to = "date",
+    values_to = "confirmed_cases"
+  ) %>% 
+  group_by(country_region, province_state, lat, long, date) %>% 
+  summarise(confirmed_cases = sum(confirmed_cases)) %>% 
+  mutate(date = mdy(date)) 
+
+```
+
+
+Column {{.sidebar data-width=200}
+-----------------------------------------------------------------------
+
+### Select Country and Dates
+
+```{r}
+selectInput(
+  inputId = 'countries',
+  label = 'Country',
+  choices = unique(covid_confirmed$country_region),
+  selected = "Pakistan"
+) 
+
+
+dateInput(
+  inputId = "start_date",
+  label = "Start Date",
+  value = min(covid_confirmed_summarised$date),
+  min = min(covid_confirmed_summarised$date),
+  max = max(covid_confirmed_summarised$date),
+  format = "yyyy-mm-dd"
+) 
+
+dateInput(
+  inputId = "end_date",
+  label = "End Date",
+  value = max(covid_confirmed_summarised$date),
+  min = min(covid_confirmed_summarised$date),
+  max = max(covid_confirmed_summarised$date),
+  format = "yyyy-mm-dd"
+)
+
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Total Cases, Deaths and Recoveries {data-height=50}
+
+```{r} 
+# renderValueBox(
+#   {
+#     total_confirmed_cases <-
+#       covid_confirmed_summarised %>% 
+#       filter(date == max(covid_confirmed_summarised$date)) %>% 
+#       summarise(total_cases = sum(confirmed_cases)) %>% 
+#   }
+# )
+```
+
+### Spatial-Temporal Trend of Confirmed Cases in Specific Country at End Date {data-height=550} 
+
+```{r}
+renderLeaflet(
+  { 
+  leaflet_data <-
+    covid_confirmed_leaflet %>% 
+    filter(
+      country_region == input$countries,
+      date == as_date(input$end_date)
+    )
+  
+  leaflet() %>% 
+  addProviderTiles("CartoDB") %>% 
+  setView(lng = 0, lat = 10, zoom = 1.5) %>% 
+  addCircleMarkers(
+    data = leaflet_data,
+    lng = ~ long,
+    lat = ~ lat,
+    radius = ~ log(confirmed_cases + 1),
+    color = "orange", 
+    fillOpacity = ~ ifelse(confirmed_cases > 0, 1, 0), 
+    stroke = FALSE, 
+    label = ~ paste0(province_state, " ", country_region, ": ", confirmed_cases), 
+    popup = ~ paste0(
+      "<b>", 
+      province_state, " ",
+      country_region,
+      "</b><br>Confirmed Cases: ",
+      confirmed_cases
+    )
+  )
+    
+  }
+)
+
+```
+
+
+### Confirmed Cases Over Time{data-height=400}
+
+```{r}
+renderPlot(
+  {
+  p <- 
+    covid_confirmed_summarised %>% 
+    filter(country_region == input$countries) %>% 
+    ggplot(aes(date, confirmed_cases)) +
+    geom_line() +
+    geom_point() +
+    #transition_reveal(date) +
+    scale_x_date(
+      date_labels = "%d %b %Y",
+      date_breaks = "1 week"
+    ) +
+    coord_cartesian(
+      xlim = c(as_date(input$start_date), as_date(input$end_date))
+    ) +
+    labs(
+      title = 
+        str_glue("Trajectory of Confirmed COVID-19 Cases in {input$countries}"),
+      x = "Date",
+      y = "Number of Cases",
+      caption = "Source: Johns Hopkins University"
+) 
+  print(p)
+  } 
+)
+```
+
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+
+### Top 10 Countries with Highest Growth Rate (minimum 100 Cases)
+
+```{r}
+renderPlot(
+  {
+  countries_highest_growth_rates <-
+  covid_confirmed_summarised %>% 
+  arrange(country_region, date) %>% 
+  mutate(
+    prev_cases = lag(confirmed_cases),
+    proportionate_change = (confirmed_cases - prev_cases) / prev_cases
+  ) %>% 
+  drop_na() %>% 
+  filter(
+    !is.infinite(proportionate_change),
+    date == as_date(input$end_date),
+    proportionate_change <= 1.00,
+    confirmed_cases >= 20
+  ) %>% 
+  arrange(desc(proportionate_change)) %>% 
+  head(10) %>% 
+  pull(country_region) 
+  
+  r <-
+    covid_confirmed_summarised %>% 
+    arrange(country_region, date) %>% 
+    mutate(
+      prev_cases = lag(confirmed_cases),
+      proportionate_change = (confirmed_cases - prev_cases) / prev_cases
+    ) %>% 
+    drop_na() %>% 
+    filter(
+      !is.infinite(proportionate_change),
+      date == as_date(input$end_date),
+      proportionate_change <= 1.00,
+      confirmed_cases >= 100
+    ) %>% 
+    arrange(desc(proportionate_change)) %>% 
+    head(10) %>% 
+    ungroup() %>% 
+    mutate(
+      country_region = fct_reorder(country_region, proportionate_change)
+    ) %>% 
+    ggplot(aes(country_region, proportionate_change)) +
+    geom_col() +
+    coord_flip() +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    labs(
+      x = NULL,
+      y = "Total Number of Confirmed Cases",
+      caption = "Source: Johns Hopkins University"
+    )
+  print(r)
+  }
+)
+```
+
+### Top 10 Countries with Highest Confirmed Cases at End Date
+
+```{r}
+renderPlot(
+  {
+  q <- 
+    covid_confirmed_summarised %>% 
+    #filter(date == max(covid_confirmed_summarised$date)) %>% 
+    filter(date == max(as_date(input$end_date))) %>% 
+    group_by(country_region) %>% 
+    summarise(total_confirmed_cases = sum(confirmed_cases)) %>% 
+    arrange(desc(total_confirmed_cases)) %>% 
+    ungroup() %>% 
+    mutate(
+      country_region = fct_reorder(country_region, total_confirmed_cases)
+    ) %>% 
+    top_n(10) %>% 
+    ggplot(aes(country_region, total_confirmed_cases)) +
+    geom_col() +
+    coord_flip() +
+    scale_y_continuous(breaks = scales::breaks_width(width = 10000)) +
+    labs(
+      x = NULL,
+      y = "Total Number of Confirmed Cases",
+      caption = "Source: Johns Hopkins University"
+    )
+  q
+  }
+  )
+```
+
+
