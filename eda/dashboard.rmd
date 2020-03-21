@@ -269,10 +269,13 @@ renderPlot(
     ggplot(aes(country_region, proportionate_change)) +
     geom_col() +
     coord_flip() +
-    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    scale_y_continuous(
+      labels = scales::percent_format(accuracy = 1),
+      breaks = scales::breaks_width(width = 0.05)
+    ) + 
     labs(
       x = NULL,
-      y = "Total Number of Confirmed Cases",
+      y = "Daily Percentage Change in Number of New Cases",
       caption = "Source: Johns Hopkins University"
     )
   print(r)
