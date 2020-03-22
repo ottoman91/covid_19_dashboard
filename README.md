@@ -31,3 +31,13 @@ The following is a brief description of the main folders in this repository
 
 - eda - This folder contains the `time_series_analysis.rmd` file, which contains a few animated visualizations of the trends in cases over time. It also contains the dashboad.rmd file, which has been knitted and deployed on a shiny app. 
 Folks interested in running the dashboard on their local machine can knit this file in Rstudio and deploy it locally. 
+
+## Acknowledgements 
+
+This code base builds up on the amazing work that is being done by the following:
+
+- [Johns Hopkins University](https://coronavirus.jhu.edu/map-faq.html)
+
+- [Our World in Data](https://ourworldindata.org/coronavirus#current-covid-19-test-coverage-estimates)
+
+
