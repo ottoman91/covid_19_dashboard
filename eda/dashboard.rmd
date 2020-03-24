@@ -11,90 +11,37 @@ runtime: shiny
 library(flexdashboard) 
 library(tidyverse) 
 library(lubridate)
-library(leaflet)
+library(leaflet) 
 
-#Paths for the raw data files
-covid_confirmed_data <- "covid_confirmed.rds"
-covid_deaths_data <- "covid_deaths.rds"
-covid_recovered_data <- "covid_recovered.rds" 
-
-#Read the data into RDS files 
-covid_confirmed <-
-  covid_confirmed_data %>% 
-  read_rds() %>% 
-  rename(
-    province_state = `Province/State`,
-    country_region = `Country/Region`,
-    lat = Lat,
-    long = Long
-  )
-
-covid_deaths <-
-  covid_deaths_data %>% 
-  read_rds() %>% 
-  rename(
-    province_state = `Province/State`,
-    country_region = `Country/Region`,
-    lat = Lat,
-    long = Long
-  )
-
-covid_recovered <-
-  covid_recovered_data %>% 
-  read_rds() %>% 
-  rename(
-    province_state = `Province/State`,
-    country_region = `Country/Region`,
-    lat = Lat,
-    long = Long
-  ) 
+#devtools::install_github("ottoman91/covid19")
+library(covid19)
 
 
 #Summarize the confirmed, recovered and death cases by country and dates 
-
 covid_confirmed_summarised <-
-  covid_confirmed %>% 
-  pivot_longer(
-    cols = -c(province_state, country_region, lat, long),
-    names_to = "date",
-    values_to = "confirmed_cases"
-  ) %>% 
+  covid19 %>%
+  filter(status == "confirmed") %>% 
   group_by(country_region, date) %>% 
-  summarise(confirmed_cases = sum(confirmed_cases)) %>% 
-  mutate(date = mdy(date)) 
+  summarise(confirmed_cases = sum(cases))
 
 covid_death_summarised <-
-  covid_deaths %>% 
-  pivot_longer(
-    cols = -c(province_state, country_region, lat, long),
-    names_to = "date",
-    values_to = "confirmed_deaths"
-  ) %>% 
+  covid19 %>%
+  filter(status == "dead") %>% 
   group_by(country_region, date) %>% 
-  summarise(confirmed_deaths = sum(confirmed_deaths)) %>% 
-  mutate(date = mdy(date))
+  summarise(confirmed_deaths = sum(cases))
+ 
 
 covid_recovered_summarised <-
-  covid_recovered %>% 
-  pivot_longer(
-    cols = -c(province_state, country_region, lat, long),
-    names_to = "date",
-    values_to = "confirmed_recovered"
-  ) %>% 
+  covid19 %>%
+  filter(status == "recovered") %>% 
   group_by(country_region, date) %>% 
-  summarise(confirmed_recovered = sum(confirmed_recovered)) %>% 
-  mutate(date = mdy(date)) 
+  summarise(confirmed_recovered = sum(cases))
 
 covid_confirmed_leaflet <-
-  covid_confirmed %>% 
-  pivot_longer(
-    cols = -c(province_state, country_region, lat, long),
-    names_to = "date",
-    values_to = "confirmed_cases"
-  ) %>% 
+  covid19 %>%
+  filter(status == "confirmed") %>% 
   group_by(country_region, province_state, lat, long, date) %>% 
-  summarise(confirmed_cases = sum(confirmed_cases)) %>% 
-  mutate(date = mdy(date)) 
+  summarise(confirmed_cases = sum(cases))
 
 ```
 
@@ -108,7 +55,7 @@ Column {{.sidebar data-width=200}
 selectInput(
   inputId = 'countries',
   label = 'Country',
-  choices = unique(covid_confirmed$country_region),
+  choices = unique(covid19$country_region),
   selected = "Pakistan"
 ) 
 
